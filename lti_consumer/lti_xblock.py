@@ -649,7 +649,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Get system user role and convert it to LTI role.
         """
-        return ROLE_MAP.get(self.runtime.get_user_role(), 'Student')
+        return ROLE_MAP.get(self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.user_role'], 'Student')
 
     @property
     def course(self):
@@ -688,10 +688,11 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Returns the opaque anonymous_student_id for the current user.
         """
-        user_id = self.runtime.anonymous_student_id
+        user_id = self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.user_id']
+
         if user_id is None:
             raise LtiError(self.ugettext("Could not get user id for current request"))
-        return str(urllib.parse.quote(user_id))
+        return str(user_id)
 
     def get_icon_class(self):
         """ Returns the icon class """
@@ -877,17 +878,14 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
             'user_username': None,
             'user_language': None,
         }
-
-        if callable(self.runtime.get_real_user):
-            real_user_object = self.runtime.get_real_user(self.runtime.anonymous_student_id)
-            user_data['user_email'] = getattr(real_user_object, "email", "")
-            user_data['user_username'] = getattr(real_user_object, "username", "")
-            user_preferences = getattr(real_user_object, "preferences", None)
+        if callable(self.runtime.service(self, 'user').get_current_user):
+            real_user_object = self.runtime.service(self, 'user').get_current_user()
+            user_data['user_email'] = getattr(real_user_object, "emails", "")[0]
+            user_data['user_username'] = getattr(real_user_object, "full_name", "")
+            user_preferences = real_user_object.opt_attrs.get("edx-platform.user_preferences", None)
 
             if user_preferences is not None:
-                language_preference = user_preferences.filter(key='pref-lang')
-                if len(language_preference) == 1:
-                    user_data['user_language'] = language_preference[0].value
+                user_data['user_language'] = user_preferences.get('pref-lang')
 
         return user_data
 
@@ -1118,6 +1116,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
             })
 
             template = loader.render_mako_template('/templates/html/lti_1p3_launch.html', context)
+            log.debug("here the template is returned")
             return Response(template, content_type='text/html')
         except Lti1p3Exception as exc:
             log.warning(
