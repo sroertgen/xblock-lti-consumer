@@ -692,7 +692,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Returns the opaque anonymous_student_id for the current user.
         """
-        logging.info("User Data: %s", self.runtime.service(self, 'user').get_current_user())
+        logging.info("User Data: %s", self.runtime.service(self, 'user').get_current_user().__dir__)
         user_id = self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.user_id']
 
         if user_id is None:
