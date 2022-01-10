@@ -649,7 +649,11 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Get system user role and convert it to LTI role.
         """
-        return ROLE_MAP.get(self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.user_role'], 'Student')
+        try:
+            role = self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.user_role']
+        except KeyError:
+            role = "student"
+        return ROLE_MAP.get(role, 'Student')
 
     @property
     def course(self):
@@ -688,6 +692,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Returns the opaque anonymous_student_id for the current user.
         """
+        logging.info("User Data: %s", self.runtime.service(self, 'user').get_current_user())
         user_id = self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.user_id']
 
         if user_id is None:
