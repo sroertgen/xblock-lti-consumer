@@ -691,9 +691,10 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
     def user_id(self):
         """
         Returns the opaque anonymous_student_id for the current user.
+        This defaults to 'student' when testing in studio.
+        It will return the proper anonymous ID in the LMS.
         """
-        logging.info("User Data: %s", self.runtime.service(self, 'user').get_current_user().__dir__)
-        user_id = self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.user_id']
+        user_id = self.runtime.service(self, 'user').get_current_user().opt_attrs['edx-platform.anonymous_user_id']
 
         if user_id is None:
             raise LtiError(self.ugettext("Could not get user id for current request"))
@@ -890,7 +891,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
             user_preferences = real_user_object.opt_attrs.get("edx-platform.user_preferences", None)
 
             if user_preferences is not None:
-                user_data['user_language'] = user_preferences.get('pref-lang')
+                user_data['user_language'] = user_preferences.get('pref-lang', None)
 
         return user_data
 
